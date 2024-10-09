@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+File: skyland.py(森空岛签到)
+Author: Bwmgd
+cron: 0 30 8 * * *
+new Env('森空岛签到');
+Update: 2024/10/09
+"""
 import hashlib
 import hmac
 import json
@@ -10,12 +20,13 @@ from getpass import getpass
 from urllib import parse
 
 import requests
+import notify
 
 from SecuritySm import get_d_id
 
 token_save_name = 'TOKEN.txt'
 app_code = '4ca99fa6b56cc2ba'
-token_env = os.environ.get('TOKEN')
+token_env = os.environ.get('SKLAND_TOKEN')
 # 现在想做什么？
 current_type = os.environ.get('SKYLAND_TYPE')
 
@@ -56,6 +67,7 @@ token_password_url = "https://as.hypergryph.com/user/auth/v1/token_by_phone_pass
 grant_code_url = "https://as.hypergryph.com/user/oauth2/v2/grant"
 # 使用认证代码获得cred
 cred_code_url = "https://zonai.skland.com/web/v1/user/auth/generate_cred_by_code"
+
 
 
 def config_logger():
@@ -231,7 +243,7 @@ def do_sign(cred_resp):
     http_local.header = header.copy()
     http_local.header['cred'] = cred_resp['cred']
     characters = get_binding_list()
-
+    global msg
     for i in characters:
         body = {
             'gameId': 1,
@@ -242,6 +254,7 @@ def do_sign(cred_resp):
                              json=body).json()
         if resp['code'] != 0:
             print(f'角色{i.get("nickName")}({i.get("channelName")})签到失败了！原因：{resp.get("message")}')
+            msg += f'角色{i.get("nickName")}({i.get("channelName")})签到失败了！原因：{resp.get("message")}\n'
             continue
         awards = resp['data']['awards']
         for j in awards:
@@ -249,6 +262,7 @@ def do_sign(cred_resp):
             print(
                 f'角色{i.get("nickName")}({i.get("channelName")})签到成功，获得了{res["name"]}×{j.get("count") or 1}'
             )
+            msg += f'角色{i.get("nickName")}({i.get("channelName")})签到成功，获得了{res["name"]}×{j.get("count") or 1}\n'
 
 
 def save(token):
@@ -285,15 +299,8 @@ def init_token():
         print('使用环境变量里面的token')
         # 对于github action,不需要存储token,因为token在环境变量里
         return read_from_env()
-    tokens = []
-    tokens.extend(read(token_save_name))
-    add_account = current_type == 'add_account'
-    if add_account:
-        print('！！！您启用了添加账号模式，将不会签到！！！')
-    if len(tokens) == 0 or add_account:
-        tokens.append(input_for_token())
-    save('\n'.join(tokens))
-    return [] if add_account else tokens
+    global msg
+    msg = '请添加token!!!'
 
 
 def input_for_token():
@@ -314,15 +321,16 @@ def input_for_token():
 
 
 def start():
+    global msg
     token = init_token()
     for i in token:
         try:
             do_sign(get_cred_by_token(i))
         except Exception as ex:
             print(f'签到失败，原因：{str(ex)}')
+            msg += f'签到失败，原因：{str(ex)}\n'
             logging.error('', exc_info=ex)
     print("签到完成！")
-
 
 if __name__ == '__main__':
     print('本项目源代码仓库：https://github.com/xxyz30/skyland-auto-sign(已被github官方封禁)')
@@ -330,9 +338,10 @@ if __name__ == '__main__':
     config_logger()
 
     logging.info('=========starting==========')
-
+    global msg
     start_time = time.time()
     start()
     end_time = time.time()
     logging.info(f'complete with {(end_time - start_time) * 1000} ms')
     logging.info('===========ending============')
+    notify.wecom_app("森空岛签到", msg)
