@@ -69,7 +69,6 @@ grant_code_url = "https://as.hypergryph.com/user/oauth2/v2/grant"
 cred_code_url = "https://zonai.skland.com/web/v1/user/auth/generate_cred_by_code"
 
 
-
 def config_logger():
     current_date = date.today().strftime('%Y-%m-%d')
     if not os.path.exists('logs'):
@@ -285,7 +284,7 @@ def read(path):
 
 def read_from_env():
     v = []
-    token_list = token_env.split(',')
+    token_list = token_env.split(';')
     for i in token_list:
         i = i.strip()
         if i and i not in v:
@@ -332,13 +331,14 @@ def start():
             logging.error('', exc_info=ex)
     print("签到完成！")
 
+
 if __name__ == '__main__':
     print('本项目源代码仓库：https://github.com/xxyz30/skyland-auto-sign(已被github官方封禁)')
     print('https://gitee.com/FancyCabbage/skyland-auto-sign')
     config_logger()
 
     logging.info('=========starting==========')
-    global msg
+    msg = ""
     start_time = time.time()
     start()
     end_time = time.time()
