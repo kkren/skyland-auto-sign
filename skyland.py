@@ -16,7 +16,6 @@ import os.path
 import threading
 import time
 from datetime import date
-from getpass import getpass
 from urllib import parse
 
 import requests
@@ -149,21 +148,6 @@ def get_sign_header(url: str, method, body, h):
     return h
 
 
-def login_by_code():
-    phone = input('请输入手机号码：')
-    resp = requests.post(login_code_url, json={'phone': phone, 'type': 2}, headers=header_login).json()
-    if resp.get("status") != 0:
-        raise Exception(f"发送手机验证码出现错误：{resp['msg']}")
-    code = input("请输入手机验证码：")
-    r = requests.post(token_phone_code_url, json={"phone": phone, "code": code}, headers=header_login).json()
-    return get_token(r)
-
-
-def login_by_token():
-    token_code = input("请输入（登录森空岛电脑官网后请访问这个网址：https://web-api.skland.com/account/info/hg）:")
-    return parse_user_token(token_code)
-
-
 def parse_user_token(t):
     try:
         t = json.loads(t)
@@ -171,13 +155,6 @@ def parse_user_token(t):
     except:
         pass
     return t
-
-
-def login_by_password():
-    phone = input('请输入手机号码：')
-    password = getpass('请输入密码(不会显示在屏幕上面)：')
-    r = requests.post(token_password_url, json={"phone": phone, "password": password}, headers=header_login).json()
-    return get_token(r)
 
 
 def get_cred_by_token(token):
@@ -232,11 +209,6 @@ def get_binding_list():
     return v
 
 
-def list_awards(game_id, uid):
-    resp = requests.get(sign_url, headers=http_local.header, params={'gameId': game_id, 'uid': uid}).json()
-    print(resp)
-
-
 def do_sign(cred_resp):
     http_local.token = cred_resp['token']
     http_local.header = header.copy()
@@ -264,24 +236,6 @@ def do_sign(cred_resp):
             msg += f'角色{i.get("nickName")}({i.get("channelName")})签到成功，获得了{res["name"]}×{j.get("count") or 1}\n'
 
 
-def save(token):
-    with open(token_save_name, 'w') as f:
-        f.write(token)
-    print(
-        f'您的鹰角网络通行证保存在{token_save_name}, 打开这个可以把它复制到云函数服务器上执行!\n双击添加账号即可再次添加账号')
-
-
-def read(path):
-    if not os.path.exists(token_save_name):
-        return []
-    v = []
-    with open(path, 'r', encoding='utf-8') as f:
-        for i in f.readlines():
-            i = i.strip()
-            i and i not in v and v.append(i)
-    return v
-
-
 def read_from_env():
     v = []
     token_list = token_env.split(';')
@@ -300,23 +254,6 @@ def init_token():
         return read_from_env()
     global msg
     msg = '请添加token!!!'
-
-
-def input_for_token():
-    print("请输入你需要做什么：")
-    print("1.使用用户名密码登录（非常推荐）")
-    print("2.使用手机验证码登录（非常推荐，但可能因为人机验证失败）")
-    print("3.手动输入鹰角网络通行证账号登录(推荐)")
-    mode = input('请输入（1，2，3）：')
-    if mode == '' or mode == '1':
-        token = login_by_password()
-    elif mode == '2':
-        token = login_by_code()
-    elif mode == '3':
-        token = login_by_token()
-    else:
-        exit(-1)
-    return token
 
 
 def start():
