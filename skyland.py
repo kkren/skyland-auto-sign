@@ -281,4 +281,4 @@ if __name__ == '__main__':
     end_time = time.time()
     logging.info(f'complete with {(end_time - start_time) * 1000} ms')
     logging.info('===========ending============')
-    notify.wecom_app("森空岛签到", msg)
+    notify.send("森空岛签到", msg)
